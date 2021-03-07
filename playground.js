@@ -1,17 +1,33 @@
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const csvWriter = createCsvWriter({
-    path: './xls/sample-name.csv',
-    header: [
-        {id: 'name', title: 'NAME'},
-    ]
-});
- 
 const records = [
-    ``
+  "इमाद",
+  "मरियम",
+  "ज़ैद",
+  "फातिमा",
+  "शमीम",
+  "सोहेल",
+  "जॉन",
+  "मुकेश",
+  "रजा",
+  "गणेश",
+  "बहादुर",
+  "रमेश",
 ];
- 
-csvWriter.writeRecords(records)      
-    .then(() => {
-        console.log('...Done');
-    });
- 
+
+const help = [];
+
+records.forEach((record) => {
+  help.push([record]);
+});
+
+const createCsvWriter = require("csv-writer").createArrayCsvWriter;
+const csvWriter = createCsvWriter({
+  header: ["NAME"],
+  path: "xls/sample-name.csv",
+});
+
+
+csvWriter
+  .writeRecords(help) // returns a promise
+  .then(() => {
+    console.log("...Done");
+  });

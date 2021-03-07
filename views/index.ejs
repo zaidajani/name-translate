@@ -11,5 +11,9 @@
     <input type="file" name="file">
     <input type="submit" value="upload">
   </form>
+  
+  <% if (link == "none") {} else { %>
+    <a href="<%= link %>"><%= link %></a>
+  <% } %>
 </body>
 </html>
