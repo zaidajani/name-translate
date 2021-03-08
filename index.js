@@ -4,6 +4,7 @@ const express = require("express");
 const translate = require("translate");
 const cors = require("cors");
 const csvtojson = require("csvtojson");
+const db = require("crud-db");
 const app = express();
 
 let elemArray = [];
@@ -16,6 +17,8 @@ app.set("view engine", "ejs");
 app.use("/static", express.static(__dirname + "/xls"));
 app.use(cors());
 
+db.initialize();
+
 translate.engine = "google";
 translate.key = "AIzaSyAMy2otabTI7DJCCfdWHF9e_xy6Fua7mVU";
 
@@ -27,53 +30,58 @@ app.post("/", async (req, res) => {
   try {
     const file = req.files.file;
     const filename = file.name;
+    let dbno = db.get("num");
+    const help = [];
+    db.add("num", dbno + 1);
 
-    file.mv("./xls/" + filename, (err) => {});
+    file.mv("./xls/" + dbno + "-" + filename, (err) => {
+      console.log(err);
+    });
 
     csvtojson()
-      .fromFile("./xls/" + filename)
+      .fromFile("./xls/" + dbno + "-" + filename)
       .then((text) => {
         elemArray = text;
         elemArray.forEach((element) => {
-          translate(element.Name, { from: "Eng", to: "hin" }).then((text) => {
+          translate(element.Name, { from: "Eng", to: "hin" }).then(async (text) => {
             hindiElemArray.push(text);
             hindiElemArrayFix = hindiElemArray;
-            const help = [];
-
             try {
               hindiElemArrayFix.forEach((record) => {
                 help.push([record]);
               });
-
-              const createCsvWriter = require("csv-writer")
-                .createArrayCsvWriter;
-              const csvWriter = createCsvWriter({
-                header: ["NAME"],
-                path: `xls/${filename}`,
-              });
-
-              try {
-                csvWriter
-                  .writeRecords(help)
-                  .then(() => {
-                    res.render("index", { link: `/static/${filename}` });
-                  })
-                  .catch((err) => {
-                    console.log(err);
-                  });
-              } catch (err) {
-                console.log(err);
-              }
             } catch (err) {
               console.log(err);
             }
           });
         });
       });
+      await createFile(dbno, filename, help, res);
   } catch (err) {
     console.log(err);
   }
 });
+
+async function createFile(dbno, filename, help, res) {
+  const createCsvWriter = require("csv-writer").createArrayCsvWriter;
+  const csvWriter = createCsvWriter({
+    header: ["NAME"],
+    path: `xls/${dbno + "-" + filename}`,
+  });
+
+  try {
+    csvWriter
+      .writeRecords(help)
+      .then(() => {
+        res.render("index", { link: `/static/${dbno + "-" + filename}` });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  } catch (err) {
+    console.log(err);
+  }
+}
 
 app.listen(port, () => {
   console.log(`listening on port ${port}`);
