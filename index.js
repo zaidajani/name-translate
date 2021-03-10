@@ -4,6 +4,7 @@ const express = require("express");
 const translate = require("translate");
 const cors = require("cors");
 const csvtojson = require("csvtojson");
+const fs = require("fs");
 const db = require("crud-db");
 const app = express();
 
@@ -31,7 +32,6 @@ app.post("/", async (req, res) => {
     const file = req.files.file;
     const filename = file.name;
     let dbno = db.get("num");
-    const help = [];
     db.add("num", dbno + 1);
 
     file.mv("./xls/" + dbno + "-" + filename, (err) => {
@@ -40,23 +40,36 @@ app.post("/", async (req, res) => {
 
     csvtojson()
       .fromFile("./xls/" + dbno + "-" + filename)
-      .then((text) => {
+      .then(async (text) => {
         elemArray = text;
         elemArray.forEach((element) => {
-          translate(element.Name, { from: "Eng", to: "hin" }).then(async (text) => {
-            hindiElemArray.push(text);
-            hindiElemArrayFix = hindiElemArray;
-            try {
-              hindiElemArrayFix.forEach((record) => {
-                help.push([record]);
-              });
-            } catch (err) {
-              console.log(err);
+          translate(element.Name, { from: "Eng", to: "hin" }).then(
+            async (text) => {
+              hindiElemArray.push(text);
+              hindiElemArrayFix = hindiElemArray;
+              const help = [];
+              try {
+                hindiElemArrayFix.forEach(async (record) => {
+                  help.push(record);
+                  // await createFile(dbno, filename, help, res);
+                  console.log(help);
+                  fs.writeFileSync('xls/' + dbno + '-' + filename, JSON.stringify(help).replace(/[\[\]']+/g,''), 'utf-8');
+                  // fs.writeFileSync('xls/' + dbno + '-' + filename, JSON.stringify(record) + '\n', 'utf-8');
+                  // const ObjectsToCsv = require("objects-to-csv");
+                  // const csv = new ObjectsToCsv(help);
+                  // await csv.toDisk("./xls/" + dbno + "-" + filename);
+                  // console.log(await csv.toString());
+                });
+                res.render("index", {
+                  link: `/static/${dbno + "-" + filename}`,
+                });
+              } catch (err) {
+                console.log(err);
+              }
             }
-          });
+          );
         });
       });
-      await createFile(dbno, filename, help, res);
   } catch (err) {
     console.log(err);
   }
@@ -65,7 +78,7 @@ app.post("/", async (req, res) => {
 async function createFile(dbno, filename, help, res) {
   const createCsvWriter = require("csv-writer").createArrayCsvWriter;
   const csvWriter = createCsvWriter({
-    header: ["NAME"],
+    header: ["Name"],
     path: `xls/${dbno + "-" + filename}`,
   });
 
