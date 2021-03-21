@@ -1,3 +1,3 @@
 # name-translate
 
-Translate names from any language to hindi
+Translate names from any language to hindi!
